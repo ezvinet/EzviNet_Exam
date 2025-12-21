@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+	<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <title>EPS-TOPIK Secure Exam System</title>
+    <style>
+        :root { --bg: #f5f7fa; --card: #ffffff; --text: #222; --primary: #4f46e5; --accent: #f59e0b; --radius: 12px; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; user-select: none; }
+        .container { width: 95%; max-width: 700px; background: var(--card); padding: 25px; border-radius: var(--radius); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .hidden { display: none; }
+        .grid-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; }
+        .num-btn { padding: 15px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; background: #eee; font-weight: bold; }
+        .num-btn.answered { background: var(--primary); color: white; }
+        #timer, #timer-inline { font-size: 20px; font-weight: bold; color: #ef4444; }
+        button { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-start { background: #22c55e; color: white; width: 100%; font-size: 18px; }
+        .btn-submit { background: #ef4444; color: white; width: 100%; margin-top: 20px; }
+        .options div { margin: 10px 0; padding: 10px; border: 1px solid #eee; border-radius: 8px; }
+        .q-entry { margin-bottom: 15px; padding: 10px; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body oncontextmenu="return false;"> <div id="login-page" class="container">
+    <h2 style="text-align:center">EPS-TOPIK Login</h2>
+    <input type="email" id="email" placeholder="Email" style="width:96%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc;">
+    <input type="password" id="pass" placeholder="Password" style="width:96%; padding:10px; margin-bottom:20px; border-radius:8px; border:1px solid #ccc;">
+    <button class="btn-start" onclick="login()">Login</button>
+</div>
+
+<div id="dashboard-page" class="container hidden">
+    <h2>විභාග උපදෙස් (Dashboard)</h2>
+    <p>කරුණාකර විභාගය ආරම්භ කිරීමට බොත්තම ඔබන්න. කාලය: 49:48</p>
+    <button class="btn-start" onclick="startExam()">Start Exam</button>
+</div>
+
+<div id="grid-page" class="container hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3>ප්‍රශ්න පත්‍රය</h3>
+        <div id="timer">49:48</div>
+    </div>
+    <div class="grid-container" id="number-grid"></div>
+    <button class="btn-submit" onclick="finishExam()">Submit Exam</button>
+</div>
+
+<div id="question-page" class="container hidden">
+    <div style="display:flex; justify-content:space-between;">
+        <span id="q-label" style="font-weight:bold; color:var(--primary);">Question 1</span>
+        <div id="timer-inline">49:48</div>
+    </div>
+    <hr>
+    <div id="question-content">
+        <p id="question-text"></p>
+        <div class="options" id="options-list"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-top:20px;">
+        <button style="background:#6b7280; color:white;" onclick="prevQuestion()">Back</button>
+        <button style="background:var(--accent); color:white;" onclick="showPage('grid-page')">All Questions</button>
+        <button style="background:var(--primary); color:white;" onclick="nextQuestion()">Next</button>
+    </div>
+</div>
+
+<div id="result-page" class="container hidden">
+    <h2 style="text-align:center">විභාග ප්‍රතිඵලය</h2>
+    <div id="r"></div>
+    <button class="btn-start" style="margin-top:20px;" onclick="location.reload()">Reset</button>
+</div>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyCyAQe4T-fNyAwkB0FaeeNLa9qklWgMGMM",
+    authDomain: "ezvinet-fa366.firebaseapp.com",
+    databaseURL: "https://ezvinet-fa366-default-rtdb.firebaseio.com",
+    projectId: "ezvinet-fa366",
+    appId: "1:996355935931:web:03f1b16b898c5afb5fe39e"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+    // SECURITY: Disable F12, Ctrl+Shift+I, Ctrl+U
+    document.onkeydown = function(e) {
+        if(e.keyCode == 123) return false;
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false;
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false;
+        if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
+    };
+
+    // SECURITY: Anti-Console Debugger
+    setInterval(function() { debugger; }, 100);
+
+    const listening = [
+        {q:"Audio: 학교에 갑니다", o:["학교","회사","시장","집"], a:0, si:"පාසලට යනවා"},
+        {q:"Audio: 우유를 마십니다", o:["빵","우유","물","주스"], a:1, si:"කිරි බොනවා"}
+    ];
+    const reading = [
+        {q:"저는 매일 한국어를 ___", o:["먹습니다","공부합니다","잡니다","갑니다"], a:1, si:"ඉගෙන ගන්නවා"}
+    ];
+
+    let allQuestions = [...listening, ...reading];
+    let answers = new Array(allQuestions.length).fill(null);
+    let currentQ = 0;
+    let timeLeft = 49 * 60 + 48; // කාලය මෙතනින් වෙනස් කරන්න
+    let timerInterval;
+
+    function showPage(pageId) {
+        document.querySelectorAll('.container').forEach(p => p.classList.add('hidden'));
+        document.getElementById(pageId).classList.remove('hidden');
+        if(pageId === 'grid-page') renderGrid();
+    }
+
+    function startExam() {
+        showPage('grid-page');
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            let mins = Math.floor(timeLeft / 60);
+            let secs = String(timeLeft % 60).padStart(2, '0');
+            document.getElementById('timer').innerText = mins + ":" + secs;
+            document.getElementById('timer-inline').innerText = mins + ":" + secs;
+            if (timeLeft <= 0) finishExam();
+        }, 1000);
+    }
+
+    function renderGrid() {
+        const grid = document.getElementById('number-grid');
+        grid.innerHTML = '';
+        allQuestions.forEach((_, idx) => {
+            let btn = document.createElement('button');
+            btn.className = `num-btn ${answers[idx] !== null ? 'answered' : ''}`;
+            btn.innerText = idx + 1;
+            btn.onclick = () => { currentQ = idx; showPage('question-page'); loadQuestion(); };
+            grid.appendChild(btn);
+        });
+    }
+
+    function loadQuestion() {
+        let q = allQuestions[currentQ];
+        document.getElementById('q-label').innerText = `Question ${currentQ + 1}`;
+        document.getElementById('question-text').innerText = q.q;
+        document.getElementById('options-list').innerHTML = q.o.map((opt, i) => 
+            `<div><label><input type="radio" name="o" onchange="answers[${currentQ}]=${i}" ${answers[currentQ]===i?'checked':''}> ${opt}</label></div>`
+        ).join("");
+    }
+
+    function nextQuestion() { if(currentQ < allQuestions.length-1) { currentQ++; loadQuestion(); } }
+    function prevQuestion() { if(currentQ > 0) { currentQ--; loadQuestion(); } }
+
+    function finishExam() {
+        clearInterval(timerInterval);
+        showPage('result-page');
+        let lCorrect = 0, rCorrect = 0;
+        let correctList = [], wrongList = [];
+        allQuestions.forEach((q, idx) => {
+            let isCorrect = answers[idx] === q.a;
+            let entry = { q: q.q, userAns: answers[idx]!==null?q.o[answers[idx]]:"No Answer", correctAns: q.o[q.a], si: q.si };
+            if(isCorrect) { if(idx < listening.length) lCorrect++; else rCorrect++; correctList.push(entry); }
+            else { wrongList.push(entry); }
+        });
+        let total = lCorrect + rCorrect;
+        let passMark = 1; // පාස් ලකුණ මෙතනින් වෙනස් කරන්න
+        let pass = total >= passMark ? "✅ PASS" : "❌ FAIL";
+        let color = total >= passMark ? "#22c55e" : "#ef4444";
+        let html = `<h3 style="color:${color}; text-align:center;">${pass}</h3>`;
+        html += `Listening: ${lCorrect}/20<br>Reading: ${rCorrect}/20<br><b>Total: ${total}/40</b><br><br>`;
+        html += `<h4>✅ Correct Answers</h4>`;
+        correctList.forEach(e => { html += `<div class="q-entry"><b>Q:</b> ${e.q}<br><b>Your:</b> ${e.userAns} | <b>Correct:</b> ${e.correctAns}<br><b>සිංහල:</b> ${e.si}</div>`; });
+        html += `<h4>❌ Wrong Answers</h4>`;
+        wrongList.forEach(e => { html += `<div class="q-entry"><b>Q:</b> ${e.q}<br><b>Your:</b> ${e.userAns} | <b>Correct:</b> ${e.correctAns}<br><b>සිංහල:</b> ${e.si}</div>`; });
+        document.getElementById("r").innerHTML = html;
+    }
+</script>
+</body>
+</html>
