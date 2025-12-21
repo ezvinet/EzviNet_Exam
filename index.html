@@ -20,8 +20,17 @@
         .btn-submit { background: #ef4444; color: white; width: 100%; margin-top: 20px; }
         .options div { margin: 10px 0; padding: 10px; border: 1px solid #eee; border-radius: 8px; }
         .q-entry { margin-bottom: 15px; padding: 10px; border-bottom: 1px solid #eee; }
-		input[type="email"], input[type="password"], input[type="text"] { width: 94%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; }
-     
+		input[type="email"], 
+input[type="password"], 
+input[type="text"] { 
+    width: 100%;             /* පෙට්ටිය මුළු පළලම ගන්නා ලෙස */
+    padding: 12px;           /* ඇතුළත ඉඩ ප්‍රමාණය */
+    margin-bottom: 15px;     /* පෙට්ටි දෙක අතර පරතරය */
+    border-radius: 8px;      /* කොන් වටකුරු කිරීමට */
+    border: 1px solid #ccc;  /* වටේ ඉර (Border) */
+    box-sizing: border-box;  /* padding නිසා පළල වැඩි වීම වැළැක්වීමට */
+    font-size: 16px;
+}
     </style>
 </head>
 <body oncontextmenu="return false;"> 
