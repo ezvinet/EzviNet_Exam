@@ -2,7 +2,7 @@
 <html lang="si">
 <head>
     <meta charset="UTF-8">
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+	 <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <title>EPS-TOPIK Secure Exam System</title>
@@ -16,13 +16,13 @@
         .num-btn.answered { background: var(--primary); color: white; }
         #timer, #timer-inline { font-size: 20px; font-weight: bold; color: #ef4444; }
         button { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-start { background: #22c55e; color: white; width: 100%; font-size: 18px; margin-top: 10px; }
+        .btn-start { background: #22c55e; color: white; width: 100%; font-size: 18px; }
         .btn-submit { background: #ef4444; color: white; width: 100%; margin-top: 20px; }
         .options div { margin: 10px 0; padding: 10px; border: 1px solid #eee; border-radius: 8px; }
-        input { width: 94%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; }
+        .q-entry { margin-bottom: 15px; padding: 10px; border-bottom: 1px solid #eee; }
     </style>
 </head>
-<body oncontextmenu="return false;">
+<body oncontextmenu="return false;"> 
 
 <div id="login-page" class="container">
     <h2 style="text-align:center">EPS-TOPIK Login</h2>
@@ -31,22 +31,10 @@
     <button class="btn-start" onclick="login()">Login</button>
 </div>
 
-<div id="admin-page" class="container hidden">
-    <h2>Admin Dashboard</h2>
-    <div style="background:#f0f4ff; padding:15px; border-radius:10px;">
-        <h4>අලුත් ශිෂ්‍යයෙක් එකතු කරන්න</h4>
-        <input type="email" id="new-std-email" placeholder="Student Email">
-        <input type="password" id="new-std-pass" placeholder="Set Password">
-        <button class="btn-start" style="background:#4f46e5" onclick="createStudent()">Create Student</button>
-    </div>
-    <button class="btn-submit" style="background:#6b7280" onclick="logout()">Logout</button>
-</div>
-
 <div id="dashboard-page" class="container hidden">
-    <h2>විභාග උපදෙස්</h2>
+    <h2>විභාග උපදෙස් (Dashboard)</h2>
     <p>කරුණාකර විභාගය ආරම්භ කිරීමට බොත්තම ඔබන්න. කාලය: 49:48</p>
     <button class="btn-start" onclick="startExam()">Start Exam</button>
-    <button class="btn-submit" style="background:#6b7280" onclick="logout()">Logout</button>
 </div>
 
 <div id="grid-page" class="container hidden">
@@ -78,10 +66,11 @@
 <div id="result-page" class="container hidden">
     <h2 style="text-align:center">විභාග ප්‍රතිඵලය</h2>
     <div id="r"></div>
-    <button class="btn-start" onclick="location.reload()">Reset</button>
+    <button class="btn-start" style="margin-top:20px;" onclick="location.reload()">Reset</button>
 </div>
 
 <script>
+
 // Firebase වින්‍යාසය
 const firebaseConfig = {
     apiKey: "AIzaSyCyAQe4T-fNyAwkB0FaeeNLa9qklWgMGMM",
@@ -94,29 +83,37 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// පද්ධතියේ දත්ත
-const listening = [
-    {q:"Audio: 학교에 갑니다", o:["학교","회사","시장","집"], a:0, si:"පාසලට යනවා"},
-    {q:"Audio: 우유를 마십니다", o:["빵","우유","물","주스"], a:1, si:"කිරි බොනවා"}
-];
-const reading = [
-    {q:"저는 매일 한국어를 ___", o:["먹습니다","공부합니다","잡니다","갑니다"], a:1, si:"ඉගෙන ගන්නවා"}
-];
+    // SECURITY: Disable F12, Ctrl+Shift+I, Ctrl+U
+    document.onkeydown = function(e) {
+        if(e.keyCode == 123) return false;
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false;
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false;
+        if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
+    };
 
-let allQuestions = [...listening, ...reading];
-let answers = new Array(allQuestions.length).fill(null);
-let currentQ = 0;
-let timeLeft = 49 * 60 + 48;
-let timerInterval;
+    // SECURITY: Anti-Console Debugger
+    setInterval(function() { debugger; }, 100);
 
-// පිටු පෙන්වන ශ්‍රිතය
-function showPage(pageId) {
-    document.querySelectorAll('.container').forEach(p => p.classList.add('hidden'));
-    document.getElementById(pageId).classList.remove('hidden');
-    if(pageId === 'grid-page') renderGrid();
-}
+    const listening = [
+        {q:"Audio: 학교에 갑니다", o:["학교","회사","시장","집"], a:0, si:"පාසලට යනවා"},
+        {q:"Audio: 우유를 마십니다", o:["빵","우유","물","주스"], a:1, si:"කිරි බොනවා"}
+    ];
+    const reading = [
+        {q:"저는 매일 한국어를 ___", o:["먹습니다","공부합니다","잡니다","갑니다"], a:1, si:"ඉගෙන ගන්නවා"}
+    ];
 
-// ලොගින් ශ්‍රිතය
+    let allQuestions = [...listening, ...reading];
+    let answers = new Array(allQuestions.length).fill(null);
+    let currentQ = 0;
+    let timeLeft = 49 * 60 + 48; // කාලය මෙතනින් වෙනස් කරන්න
+    let timerInterval;
+
+    function showPage(pageId) {
+        document.querySelectorAll('.container').forEach(p => p.classList.add('hidden'));
+        document.getElementById(pageId).classList.remove('hidden');
+        if(pageId === 'grid-page') renderGrid();
+    }
+	// ලොගින් ශ්‍රිතය
 function login() {
     const email = document.getElementById('email').value.trim();
     const pass = document.getElementById('pass').value;
@@ -125,7 +122,8 @@ function login() {
         checkRole(res.user.uid);
     }).catch(err => alert("විස්තර වැරදියි: " + err.message));
 }
-
+	
+	
 // Role එක පරීක්ෂා කිරීම (Admin ද නැද්ද කියා)
 function checkRole(uid) {
     db.ref('users/' + uid).once('value').then(snap => {
@@ -145,52 +143,109 @@ function createStudent() {
         alert("සාර්ථකව එකතු කළා!");
     }).catch(err => alert(err.message));
 }
+    function startExam() {
+        showPage('grid-page');
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            let mins = Math.floor(timeLeft / 60);
+            let secs = String(timeLeft % 60).padStart(2, '0');
+            document.getElementById('timer').innerText = mins + ":" + secs;
+            document.getElementById('timer-inline').innerText = mins + ":" + secs;
+            if (timeLeft <= 0) finishExam();
+        }, 1000);
+    }
 
-function startExam() {
-    showPage('grid-page');
-    timerInterval = setInterval(() => {
-        timeLeft--;
-        let mins = Math.floor(timeLeft / 60);
-        let secs = String(timeLeft % 60).padStart(2, '0');
-        document.getElementById('timer').innerText = mins + ":" + secs;
-        document.getElementById('timer-inline').innerText = mins + ":" + secs;
-        if (timeLeft <= 0) finishExam();
-    }, 1000);
-}
+    function renderGrid() {
+        const grid = document.getElementById('number-grid');
+        grid.innerHTML = '';
+        allQuestions.forEach((_, idx) => {
+            let btn = document.createElement('button');
+            btn.className = `num-btn ${answers[idx] !== null ? 'answered' : ''}`;
+            btn.innerText = idx + 1;
+            btn.onclick = () => { currentQ = idx; showPage('question-page'); loadQuestion(); };
+            grid.appendChild(btn);
+        });
+    }
 
-function renderGrid() {
-    const grid = document.getElementById('number-grid');
-    grid.innerHTML = '';
-    allQuestions.forEach((_, idx) => {
-        let btn = document.createElement('button');
-        btn.className = `num-btn ${answers[idx] !== null ? 'answered' : ''}`;
-        btn.innerText = idx + 1;
-        btn.onclick = () => { currentQ = idx; showPage('question-page'); loadQuestion(); };
-        grid.appendChild(btn);
-    });
-}
+    function loadQuestion() {
+        let q = allQuestions[currentQ];
+        document.getElementById('q-label').innerText = `Question ${currentQ + 1}`;
+        document.getElementById('question-text').innerText = q.q;
+        document.getElementById('options-list').innerHTML = q.o.map((opt, i) => 
+            `<div><label><input type="radio" name="o" onchange="answers[${currentQ}]=${i}" ${answers[currentQ]===i?'checked':''}> ${opt}</label></div>`
+        ).join("");
+    }
 
-function loadQuestion() {
-    let q = allQuestions[currentQ];
-    document.getElementById('q-label').innerText = `Question ${currentQ + 1}`;
-    document.getElementById('question-text').innerText = q.q;
-    document.getElementById('options-list').innerHTML = q.o.map((opt, i) => 
-        `<div><label><input type="radio" name="o" onchange="answers[${currentQ}]=${i}" ${answers[currentQ]===i?'checked':''}> ${opt}</label></div>`
-    ).join("");
-}
+    function nextQuestion() { if(currentQ < allQuestions.length-1) { currentQ++; loadQuestion(); } }
+    function prevQuestion() { if(currentQ > 0) { currentQ--; loadQuestion(); } }
 
-function nextQuestion() { if(currentQ < allQuestions.length-1) { currentQ++; loadQuestion(); } }
-function prevQuestion() { if(currentQ > 0) { currentQ--; loadQuestion(); } }
-
-function finishExam() {
+    function finishExam() {
     clearInterval(timerInterval);
     showPage('result-page');
-    let totalScore = 0;
-    allQuestions.forEach((q, idx) => { if(answers[idx] === q.a) totalScore++; });
-    document.getElementById("r").innerHTML = `<h3 style="text-align:center;">ලකුණු: ${totalScore} / ${allQuestions.length}</h3>`;
-}
 
-function logout() { auth.signOut().then(() => location.reload()); }
+    let lCorrect = 0, rCorrect = 0;
+    let correctList = [], wrongList = [];
+
+    allQuestions.forEach((q, idx) => {
+        let isCorrect = (answers[idx] !== null && answers[idx] === q.a);
+        let entry = { 
+            q: q.q, 
+            userAns: answers[idx] !== null ? q.o[answers[idx]] : "<span style='color:red;'>No Answer</span>", 
+            correctAns: q.o[q.a], 
+            si: q.si 
+        };
+
+        if(isCorrect) { 
+            if(idx < listening.length) lCorrect++; else rCorrect++; 
+            correctList.push(entry); 
+        } else { 
+            wrongList.push(entry); 
+        }
+    });
+
+    let total = lCorrect + rCorrect;
+    let passMark = 20; // සාමාන්‍යයෙන් EPS-TOPIK පාස් ලකුණ 20 (80/200) කි.
+    let isPassed = total >= passMark;
+    let statusText = isPassed ? "✅ PASS" : "❌ FAIL";
+    let statusColor = isPassed ? "#22c55e" : "#ef4444";
+
+    // Result Page එකේ පෙනුම ලස්සන කිරීම
+    let html = `<div style="text-align:center; margin-bottom: 20px;">
+                    <h1 style="color:${statusColor}; font-size: 32px; margin-bottom: 5px;">${statusText}</h1>
+                    <p style="font-size: 18px;">ලබාගත් ලකුණු ප්‍රමාණය: <b>${total} / 40</b></p>
+                </div>`;
+    
+    html += `<div style="display: flex; justify-content: space-around; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 20px;">
+                <span>Listening: <b>${lCorrect}/20</b></span>
+                <span>Reading: <b>${rCorrect}/20</b></span>
+             </div>`;
+
+    if (correctList.length > 0) {
+        html += `<h4 style="color:#22c55e;">✅ Correct Answers</h4>`;
+        correctList.forEach(e => { 
+            html += `<div class="q-entry">
+                        <b>Q:</b> ${e.q}<br>
+                        <span style="color:green;">✔ Your Answer: ${e.userAns}</span><br>
+                        <b>සිංහල:</b> ${e.si}
+                     </div>`; 
+        });
+    }
+
+    if (wrongList.length > 0) {
+        html += `<h4 style="color:#ef4444; margin-top: 20px;">❌ Wrong Answers</h4>`;
+        wrongList.forEach(e => { 
+            html += `<div class="q-entry" style="border-left: 4px solid #ef4444;">
+                        <b>Q:</b> ${e.q}<br>
+                        <span style="color:red;">✖ Your Answer: ${e.userAns}</span><br>
+                        <span style="color:green;">✅ Correct: ${e.correctAns}</span><br>
+                        <b>සිංහල:</b> ${e.si}
+                     </div>`; 
+        });
+    }
+
+    document.getElementById("r").innerHTML = html;
+}
+	function logout() { auth.signOut().then(() => location.reload()); }
 </script>
 </body>
 </html>
