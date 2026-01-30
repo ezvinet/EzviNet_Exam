@@ -6,7 +6,7 @@ const examPapers = {
         questions: [
             {
                 q: "학교에 갑니다",
-                o: [ { text: "선택 1", audio: "audio/track_001.MP3" },"회사","시장","집"],
+                o: [ { text: "선택 1", audio: "track_001.MP3" },"회사","시장","집"],
                 a: 0,
                 si: "පාසලට යනවා",
                 audio: "audio/track_001.MP3",
