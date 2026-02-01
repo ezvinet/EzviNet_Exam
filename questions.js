@@ -7,7 +7,8 @@
 const examPapers = {
     paper1: {
         title: "EPS-TOPIK Paper 01",
-        time: 50 * 60,
+        time: 05 * 60,
+         passMark: 1, 
         questions: [
             {
                 q: "학교에 갑니다",
@@ -29,6 +30,7 @@ const examPapers = {
     paper2: {
         title: "EPS-TOPIK Paper 02",
         time: 45 * 60,
+         passMark: 2, 
         questions: [
             {
                 q: "우유를 마십니다",
