@@ -1,8 +1,8 @@
 const examPapers = {
     paper1: {
         title: "EPS-TOPIK Paper 01",
-        time: 05 * 60, // seconds
-        passMark: 1, // Paper-specific pass mark
+        time: 04 * 60, // seconds
+        passMark: 6, // Paper-specific pass mark
         questions: [
             {
                 q: "(1) 다음 그림을 보고 맞는 단어나 문장을 고르십시오.",
