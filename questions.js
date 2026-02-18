@@ -1,7 +1,7 @@
 const examPapers = {
     paper1: {
         title: "EPS-TOPIK Paper 01",
-        time: 04 * 60, // seconds
+        time: 05 * 60, // seconds
         passMark: 6, // Paper-specific pass mark
         questions: [
             {
